@@ -17,6 +17,7 @@ export const leads = pgTable('leads', {
   name: text('name'),
   status: text('status').default('cold'),
   needsSummary: text('needs_summary'),
+  aiActive: boolean('ai_active').default(true),
   lastInteraction: timestamp('last_interaction').defaultNow(),
   createdAt: timestamp('created_at').defaultNow(),
 });

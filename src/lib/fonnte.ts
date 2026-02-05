@@ -1,0 +1,32 @@
+
+export async function sendWhatsApp(target: string, message: string) {
+    if (!process.env.FONNTE_TOKEN || process.env.FONNTE_TOKEN === "mock-token") {
+        console.log(`[MOCK FONNTE] Sending to ${target}: ${message}`)
+        return { status: true, detail: "Mock success" }
+    }
+
+    try {
+        const response = await fetch('https://api.fonnte.com/send', {
+            method: 'POST',
+            headers: {
+                'Authorization': process.env.FONNTE_TOKEN!,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                target,
+                message,
+                countryCode: '62' // Default Indonesia
+            })
+        })
+
+        const result = await response.json()
+        if (!result.status) {
+            console.error('[FONNTE ERROR]', result)
+        }
+        return result
+
+    } catch (error) {
+        console.error('[FONNTE EXCEPTION]', error)
+        return { status: false, detail: "Exception" }
+    }
+}
