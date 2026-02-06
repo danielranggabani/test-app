@@ -2,179 +2,181 @@
 
 Aplikasi CRM AI berbasis web yang dibangun dengan teknologi modern untuk mengotomatisasi manajemen leads, penjadwalan, dan interaksi pelanggan melalui WhatsApp menggunakan Gemini AI.
 
-## 🚀 Teknologi yang Digunakan
+![Status](https://img.shields.io/badge/Status-Production%20Ready-green)
+![Tech](https://img.shields.io/badge/Tech-Next.js%2014%20%7C%20Neon%20%7C%20Gemini-blue)
+
+## 🚀 Teknologi & Stack
 
 *   **Framework:** Next.js 14 (App Router) dengan TypeScript.
-*   **Database:** Neon (Serverless Postgres).
-*   **ORM:** Drizzle ORM.
+*   **Database:** Neon (Serverless Postgres) + `pgvector`.
+*   **ORM:** Drizzle ORM (Type-safe SQL).
 *   **Autentikasi:** NextAuth.js (v5) - Credentials Provider.
 *   **Styling:** Tailwind CSS + Shadcn UI (Tema Industrial Dark Mode).
-*   **AI:** Google Gemini Pro & Gemini Embedding.
-*   **Messaging:** Fonnte (WhatsApp Gateway API).
-*   **State Management:** Tanstack Query (React Query).
+*   **AI Engine:**
+    *   Generative: Google Gemini Pro.
+    *   Vector Search: Gemini Embedding-001.
+*   **Messaging:** Fonnte (Unofficial WhatsApp Gateway API).
+*   **State Management:** Tanstack Query (React Query) untuk real-time polling.
 
-## 📋 Fitur Utama
+---
+
+## 🏛️ Arsitektur Sistem
+
+Sistem ini bekerja dengan menggabungkan Database Relasional untuk data bisnis dan Vector Search untuk memori AI.
+
+### Alur Pesan Masuk (Webhook)
+```mermaid
+graph TD
+    A[User WhatsApp] -->|Kirim Pesan| B(Fonnte Gateway)
+    B -->|Webhook POST| C{Next.js API Route}
+    C -->|1. Cek User| D[Neon DB: Leads Table]
+    C -->|2. Cek AI Active?| E{AI Switch}
+    E -- OFF --> F[Stop / Simpan Chat Saja]
+    E -- ON --> G[Gemini Embedding]
+    G -->|Vector Search| H[Neon DB: Knowledge Base]
+    H -->|3. Retrieve Context| I[Gemini Pro LLM]
+    I -->|Prompt Engineering| J[Generate Jawaban]
+    J -->|4. Simpan & Kirim| K[Fonnte Send API]
+    K --> A
+```
+
+---
+
+## 📋 Fitur Utama & Panduan Penggunaan
 
 ### 1. 🔐 Sistem Autentikasi Aman
-*   Halaman login khusus admin dengan desain industrial.
-*   Proteksi middleware untuk semua rute dashboard.
-*   Akses level admin.
+*   Halaman login khusus admin (`/login`) dengan desain industrial.
+*   Proteksi middleware: User yang belum login akan otomatis dialihkan.
+*   **Keamanan:** Password di-hash menggunakan bcrypt.
 
 ### 2. 📊 Dashboard Overview (`/dashboard`)
-*   **Statistik Realtime:** Menampilkan total chat, leads prioritas (Hot), dan invoice yang belum dibayar langsung dari database.
-*   **Action Required:** Tabel prioritas yang otomatis memfilter leads dengan status `waiting_invoice` agar admin tidak melewatkan closing.
-*   **Desain:** Minimalis dengan nuansa gelap (Zinc-950) untuk fokus maksimal.
+Pusat kontrol utama untuk melihat kesehatan bisnis secara realtime.
+*   **Card Total Chat:** Menghitung total interaksi yang terjadi dalam sistem.
+*   **Card Hot Leads:** Jumlah prospek potensial yang siap closing.
+*   **Action Required:** Tabel prioritas yang **HANYA** menampilkan leads dengan status `waiting_invoice`.
+    *   *Skenario:* Admin login pagi hari, langsung cek tabel ini untuk memproses tagihan yang tertunda.
 
 ### 3. 💬 Live Chat & Human Handoff (`/chat`)
-*   **WhatsApp Web Clone:** Antarmuka familiar untuk memudahkan penggunaan.
-*   **Smart Sidebar:** Daftar kontak diurutkan otomatis berdasarkan waktu interaksi terakhir.
-*   **AI Toggle Switch:** Fitur eksklusif untuk mematikan/menyalakan AI pada percakapan spesifik. Berguna saat Admin ingin mengambil alih pembicaraan rumit.
-*   **Polling Realtime:** Pesan masuk muncul tanpa refresh halaman (interval 3 detik).
-*   **Direct Reply:** Balasan admin dari dashboard langsung terkirim ke WhatsApp user via Fonnte.
+Antarmuka chat yang terhubung langsung ke database dan WhatsApp user.
+*   **Sidebar:** Daftar kontak diurutkan berdasarkan pesan terbaru.
+*   **AI Toggle Switch (PENTING):**
+    *   *ON:* AI menjawab otomatis setiap pesan masuk.
+    *   *OFF:* AI diam. Gunakan ini saat Admin ingin mengambil alih percakapan (misal: negosiasi harga rumit atau menangani komplain).
+*   **Polling Realtime:** Pesan baru dari WhatsApp user akan muncul di layar dalam 3 detik tanpa perlu refresh browser.
 
 ### 4. 👥 Manajemen Leads (`/leads`)
-*   **Database Terpusat:** Menyimpan semua nomor telepon yang menghubungi WhatsApp bisnis Anda.
-*   **Status Pipeline:** Lacak perjalanan pelanggan dari Cold -> Warm -> Hot -> Deal.
-*   **Quick Update:** Ubah status lead cukup dengan mengklik badge status di tabel.
-*   **Needs Summary:** Kolom ringkasan kebutuhan klien yang bisa diisi manual atau otomatis oleh AI (future update).
+CRM sederhana untuk melacak status pelanggan.
+*   **Status Pipeline:**
+    *   `Cold`: Baru bertanya, belum ada minat jelas.
+    *   `Warm`: Mulai tanya harga/detail.
+    *   `Hot`: Sangat tertarik, minta diskon/meeting.
+    *   `Waiting Invoice`: Menunggu pembayaran.
+    *   `Deal`: Sudah bayar.
+*   **Cara Update:** Klik langsung pada badge status di tabel untuk mengubahnya ke tahap selanjutnya.
 
 ### 5. 🧠 AI Knowledge Base (`/brain`)
-*   **Otak Cadangan:** Tempat Anda melatih AI agar paham produk/jasa MasWebsite.id.
-*   **RAG System:** Saat user bertanya, AI akan mencari potongan teks paling relevan di sini sebelum menjawab.
-*   **Input Fleksibel:** Tambahkan teks manual, FAQ, atau daftar harga. Sistem otomatis membuat "Embedding" (vektor matematika) agar teks bisa dicari mesin.
-*   **Manajemen Konteks:** Hapus data lama yang sudah tidak valid agar AI tidak halusinasi.
+"Otak" cadangan untuk AI. Di sini Anda menyimpan SOP, Harga, dan FAQ.
+*   **Cara Menambah Data:**
+    1.  Klik "Add New Data".
+    2.  Ketik/Paste teks (misal: "Harga Paket Basic Rp 2.000.000, fitur A, B, C").
+    3.  Klik Simpan. Sistem otomatis mengubah teks menjadi *Vector Embedding*.
+*   **Skenario:** Jika Anda mengubah harga, hapus data lama di sini dan tambahkan data harga baru agar AI tidak memberikan info kadaluarsa.
 
 ### 6. 📅 Penjadwalan (`/schedule`)
-*   **Kalender Mingguan:** Visualisasi slot waktu 08:00 - 20:00.
-*   **Status Slot:** Warna hijau untuk Available, Putih untuk Booked, dan Abu-abu untuk Istirahat.
-*   **Single Source of Truth:** AI akan mengecek tabel ini sebelum menjanjikan waktu meeting ke klien.
-
-### 7. 🤖 WhatsApp AI Automation (Webhook)
-*   **Endpoint:** `/api/webhook/whatsapp`
-*   **Cara Kerja:**
-    1.  **Identifikasi:** Cek apakah pengirim pesan adalah Lead baru atau lama.
-    2.  **Filter AI:** Cek apakah fitur AI aktif untuk Lead ini.
-    3.  **Retrieval (RAG):** Cari 3 potongan info relevan dari Knowledge Base menggunakan `pgvector` (Cosine Similarity).
-    4.  **Prompting:** Gabungkan Konteks + Riwayat Chat + Pertanyaan User -> Kirim ke Gemini Pro.
-    5.  **Respon:** Jawaban AI disimpan ke database dan dikirim ke WA User.
+*   Visualisasi ketersediaan waktu tim.
+*   AI akan membaca data di tabel ini (via RAG) sebelum menjanjikan waktu meeting ke klien.
+*   *Note:* Saat ini fitur booking otomatis oleh AI masih dalam tahap pengembangan (Roadmap v2).
 
 ---
 
-## 🛠️ Cara Setup Project
+## 🛠️ Cara Setup Project (Lengkap)
 
-### Prasyarat
-1.  **Node.js (v18+)**: Runtime environment.
-2.  **Akun Neon Database**: Database Postgres serverless. Pastikan ekstensi `vector` aktif.
-3.  **Google AI Studio**: Dapatkan API Key untuk Gemini Pro.
-4.  **Fonnte**: Layanan gateway WhatsApp (Gratis/Berbayar).
+### 1. Persiapan Akun & API Key
+Sebelum coding, pastikan Anda memiliki:
+*   **Neon Database:** Buat project baru, pilih Postgres. Salin `Connection String`.
+*   **Google AI Studio:** Buat API Key untuk Gemini Pro.
+*   **Fonnte:** Daftar di [fonnte.com](https://fonnte.com), hubungkan WhatsApp, dan salin Token API.
 
-### Langkah Instalasi
+### 2. Instalasi Lokal
+```bash
+# Clone repo
+git clone https://github.com/username/context7-crm.git
+cd context7-crm
 
-1.  **Clone Repository**
-    ```bash
-    git clone https://github.com/username/context7-crm.git
-    cd context7-crm
-    ```
+# Install paket
+npm install
+```
 
-2.  **Install Dependencies**
-    ```bash
-    npm install
-    ```
+### 3. Konfigurasi Environment (.env)
+Buat file `.env` di root project. **JANGAN SAMPAI SALAH COPY**.
 
-3.  **Konfigurasi Environment (.env)**
-    Buat file `.env` di root folder. Salin template berikut:
+```env
+# DATABASE (Neon)
+# Pastikan ada ?sslmode=require di ujungnya
+DATABASE_URL="postgres://user:password@ep-xyz.aws.neon.tech/dbname?sslmode=require"
 
-    ```env
-    # Database (Neon Connection String)
-    DATABASE_URL="postgres://user:password@host:port/dbname?sslmode=require"
+# KEAMANAN
+# Generate random string: openssl rand -base64 32
+AUTH_SECRET="rahasia_super_aman_123"
 
-    # Keamanan (Generate string acak bebas)
-    AUTH_SECRET="rahasia_super_aman_123"
+# AKUN ADMIN (Initial Setup)
+ADMIN_EMAIL="admin@maswebsite.id"
+ADMIN_PASSWORD="password123"
 
-    # Akun Admin Default (Backdoor untuk login pertama kali)
-    ADMIN_EMAIL="admin@maswebsite.id"
-    ADMIN_PASSWORD="password123"
+# GOOGLE AI
+GEMINI_API_KEY="AIzaSy..."
 
-    # AI Config
-    GEMINI_API_KEY="AIzaSy..."
+# WHATSAPP (Fonnte)
+FONNTE_TOKEN="token_fonnte_anda"
+```
 
-    # WhatsApp Config (Dashboard Fonnte)
-    FONNTE_TOKEN="token_fonnte_anda"
-    ```
+### 4. Database Push
+Kirim struktur tabel (Schema) ke Neon.
+```bash
+npx drizzle-kit push
+```
+*Jika sukses, Anda akan melihat pesan "Changes applied".*
 
-4.  **Setup Database**
-    Jalankan perintah ini untuk membuat tabel di Neon:
-    ```bash
-    npx drizzle-kit generate   # Membuat file migrasi SQL
-    npx drizzle-kit push       # Menerapkan schema ke DB Cloud
-    ```
+### 5. Jalankan Aplikasi
+```bash
+npm run dev
+```
+Akses di `http://localhost:3000`.
 
-5.  **Jalankan Server Development**
-    ```bash
-    npm run dev
-    ```
-    Buka browser di [http://localhost:3000](http://localhost:3000).
-
-### Langkah Integrasi WhatsApp (Webhook)
-
-1.  Pastikan aplikasi Anda sudah online (deploy ke Vercel/VPS) agar punya domain publik (https).
-2.  Buka Dashboard Fonnte -> Device.
-3.  Scan QR Code dengan WhatsApp Bisnis Anda.
-4.  Masuk ke menu **Webhook**.
-5.  Isi URL: `https://domain-anda.com/api/webhook/whatsapp`.
-6.  Centang status "Active".
+### 6. Setup Webhook (Agar AI Membalas)
+1.  Pastikan aplikasi sudah dideploy ke internet (misal: Vercel). URL lokal (`localhost`) **TIDAK BISA** menerima webhook dari Fonnte.
+2.  Buka Dashboard Fonnte -> Menu Webhook.
+3.  Isi URL: `https://nama-project-anda.vercel.app/api/webhook/whatsapp`.
+4.  Centang status "Active".
+5.  Simpan.
 
 ---
 
-## 📚 Struktur Database
+## 🔒 Security Best Practices
 
-Berikut adalah gambaran tabel utama dalam sistem:
-
-*   **users**: Menyimpan data login admin.
-*   **leads**: Data prospek (No HP, Nama, Status, AI Active).
-*   **chats**: Riwayat percakapan (User, AI, Admin).
-*   **knowledge_base**: Data pelatihan AI + Vektor Embedding (768 dimensi).
-*   **availability_slots**: Jadwal booking meeting.
+1.  **Environment Variables:** Jangan pernah commit file `.env` ke GitHub. Pastikan `.gitignore` sudah mencakup `.env`.
+2.  **Admin Password:** Segera ubah logika login di `src/auth.ts` untuk tidak lagi menggunakan hardcoded password setelah fase setup selesai, atau ganti password di `.env` dengan string yang sangat kuat.
+3.  **Middleware:** Selalu cek apakah route baru yang Anda buat sudah tercover oleh `middleware.ts` agar tidak bisa diakses publik.
 
 ---
 
 ## 🔧 Troubleshooting
 
-*   **AI Menjawab "Maaf, saya sedang mengalami gangguan"**:
-    *   Cek `GEMINI_API_KEY` di `.env`.
-    *   Pastikan kuota API Google belum habis.
-*   **Pesan tidak masuk ke Dashboard**:
-    *   Cek koneksi internet server.
-    *   Pastikan Webhook Fonnte sudah diset dengan benar.
-*   **Login Gagal**:
-    *   Pastikan email/password sesuai dengan `.env` atau data di tabel `users`.
+### AI Tidak Menjawab
+*   Cek `GEMINI_API_KEY`.
+*   Cek apakah fitur "AI Auto-Reply" di halaman `/chat` untuk user tersebut sedang OFF?
+*   Cek log Vercel/Terminal: Apakah ada error `quota exceeded` dari Google?
+
+### Pesan Webhook Gagal (Fonnte)
+*   Pastikan URL webhook di Fonnte benar (menggunakan HTTPS).
+*   Cek apakah server Anda (Vercel) sedang down/maintenance.
+
+### Database Error (ECONNREFUSED)
+*   Ini biasanya terjadi saat build lokal tanpa koneksi internet yang stabil ke Neon.
+*   Solusi: Pastikan koneksi internet lancar, atau set `DATABASE_URL` dengan benar.
 
 ---
 
-## 🤖 Mengubah Persona AI
-
-Anda dapat mengubah gaya bahasa atau aturan AI dengan mengedit file:
-`src/app/api/webhook/whatsapp/route.ts`
-
-Cari bagian `const systemPrompt` dan ubah teks di dalamnya:
-```typescript
-const systemPrompt = `
-You are Rangga's Assistant...
-RULES:
-1. ...
-`
-```
-
----
-
-## 🎨 Design System
-*   **Tema:** Industrial Minimalist.
-*   **Warna Utama:** Hitam (Zinc-950), Putih (Zinc-50), Abu-abu (Zinc-800).
-*   **Library:** Shadcn UI + Tailwind CSS.
-
----
-
-## 🤝 Kontribusi
-Project ini dikembangkan khusus untuk MasWebsite.id.
-
-License: Private / Proprietary.
+## 🤝 Kontribusi & Lisensi
+Dikembangkan oleh Tim Teknis MasWebsite.id.
+Dilarang mendistribusikan ulang tanpa izin.
