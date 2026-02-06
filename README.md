@@ -10,6 +10,7 @@ Aplikasi CRM AI berbasis web yang dibangun dengan teknologi modern untuk mengoto
 *   **Autentikasi:** NextAuth.js (v5) - Credentials Provider.
 *   **Styling:** Tailwind CSS + Shadcn UI (Tema Industrial Dark Mode).
 *   **AI:** Google Gemini Pro & Gemini Embedding.
+*   **Messaging:** Fonnte (WhatsApp Gateway API).
 *   **State Management:** Tanstack Query (React Query).
 
 ## 📋 Fitur Utama
@@ -20,24 +21,26 @@ Aplikasi CRM AI berbasis web yang dibangun dengan teknologi modern untuk mengoto
 *   Akses level admin.
 
 ### 2. 📊 Dashboard Overview (`/dashboard`)
-*   Statistik realtime: Total Chat, Hot Leads, Pending Invoice.
-*   Tabel "Action Required" untuk prioritas tugas.
+*   Statistik realtime dari Database: Total Chat, Hot Leads, Pending Invoice.
+*   Tabel "Action Required" mengambil data leads dengan status `waiting_invoice`.
 *   Desain minimalis dan informatif.
 
 ### 3. 💬 Live Chat & Human Handoff (`/chat`)
-*   Antarmuka chat mirip WhatsApp Web.
-*   Sidebar daftar kontak dengan status.
-*   **Toggle AI:** Aktifkan/Nonaktifkan AI untuk mengambil alih percakapan.
-*   Simulasi realtime dengan polling data.
+*   Antarmuka chat mirip WhatsApp Web terhubung langsung ke Database.
+*   Sidebar daftar kontak diurutkan berdasarkan interaksi terakhir.
+*   **Toggle AI:** Aktifkan/Nonaktifkan AI untuk lead tertentu langsung dari UI.
+*   **Polling Realtime:** Pesan baru muncul otomatis tanpa refresh halaman.
+*   **Kirim Pesan:** Admin dapat membalas pesan langsung yang terkirim ke WhatsApp user via Fonnte.
 
 ### 4. 👥 Manajemen Leads (`/leads`)
-*   Tabel data prospek terpusat.
-*   Status tracking: Cold, Warm, Hot, Deal.
+*   Tabel data prospek terpusat dari Database.
+*   Status tracking interaktif: Klik badge status untuk mengubah (Cold -> Warm -> Hot -> Deal).
 *   Ringkasan kebutuhan klien (Summary Needs).
 
 ### 5. 🧠 AI Knowledge Base (`/brain`)
 *   Pusat data untuk melatih AI (RAG - Retrieval Augmented Generation).
-*   Mendukung input teks manual, PDF, dan link web (Stub).
+*   **Input Data:** Tambahkan teks/konteks bisnis baru yang otomatis di-embedding menggunakan Gemini.
+*   **Manajemen:** Hapus data konteks lama.
 *   Tampilan Grid Masonry untuk dokumen.
 
 ### 6. 📅 Penjadwalan (`/schedule`)
@@ -46,12 +49,13 @@ Aplikasi CRM AI berbasis web yang dibangun dengan teknologi modern untuk mengoto
 *   Manajemen ketersediaan untuk AI.
 
 ### 7. 🤖 WhatsApp AI Automation (Webhook)
-*   Endpoint terintegrasi untuk Fonnte/WhatsApp Gateway.
-*   Logika otomatis:
-    1.  Cek konteks user (Lead baru/lama).
-    2.  Pencarian RAG (Retrieval) dari Knowledge Base.
-    3.  Generasi jawaban via Gemini Pro.
-    4.  Penyimpanan riwayat chat.
+*   Endpoint terintegrasi: `/api/webhook/whatsapp`.
+*   **Alur Logika Cerdas:**
+    1.  **Cek Konteks:** Identifikasi Lead berdasarkan nomor telepon.
+    2.  **Cek Status AI:** Jika fitur AI dimatikan untuk lead tersebut, bot tidak akan menjawab.
+    3.  **RAG Search:** Mencari data relevan di `knowledge_base` menggunakan `pgvector`.
+    4.  **Generasi Jawaban:** Gemini Pro menyusun jawaban berdasarkan konteks dan riwayat chat.
+    5.  **Eksekusi:** Jawaban dikirim otomatis ke WhatsApp pengguna.
 
 ---
 
@@ -59,8 +63,9 @@ Aplikasi CRM AI berbasis web yang dibangun dengan teknologi modern untuk mengoto
 
 ### Prasyarat
 *   Node.js (v18+)
-*   Akun Neon Database (Postgres)
-*   API Key Google Gemini
+*   Akun Neon Database (Postgres) dengan ekstensi `vector` aktif.
+*   API Key Google Gemini (AI Studio).
+*   Akun Fonnte (untuk WhatsApp Gateway).
 
 ### Instalasi
 
@@ -91,6 +96,10 @@ Aplikasi CRM AI berbasis web yang dibangun dengan teknologi modern untuk mengoto
 
     # AI (Gemini)
     GEMINI_API_KEY="isi_dengan_api_key_google_anda"
+
+    # WhatsApp (Fonnte)
+    # Dapatkan token di dashboard.fonnte.com
+    FONNTE_TOKEN="isi_dengan_token_fonnte_anda"
     ```
 
 4.  **Database Migration (Drizzle)**
@@ -109,11 +118,11 @@ Aplikasi CRM AI berbasis web yang dibangun dengan teknologi modern untuk mengoto
 ### Cara Menggunakan
 
 1.  **Login Admin:** Masuk ke `/login` menggunakan email dan password yang diset di `.env`.
-2.  **Dashboard:** Pantau statistik utama.
-3.  **Knowledge Base:** Masuk ke menu "AI Brain" (`/brain`) dan tambahkan data bisnis (Harga, FAQ, dll) agar AI bisa menjawab pertanyaan pelanggan.
-4.  **WhatsApp Integration:**
-    *   Setup akun Fonnte atau Gateway WA lainnya.
-    *   Set webhook URL ke `https://domain-anda.com/api/webhook/whatsapp`.
+2.  **Knowledge Base:** Masuk ke menu "AI Brain" (`/brain`) dan isi data bisnis (Harga, FAQ, dll) agar AI memiliki konteks awal.
+3.  **WhatsApp Integration:**
+    *   Setup akun Fonnte dan scan QR Code WhatsApp.
+    *   Di Dashboard Fonnte, set webhook URL ke `https://domain-anda.com/api/webhook/whatsapp`.
+    *   Pastikan opsi "Webhook Status" aktif.
 
 ---
 
