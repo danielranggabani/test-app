@@ -1,5 +1,13 @@
 
+/**
+ * Sends a WhatsApp message via Fonnte API.
+ *
+ * @param target - The phone number to send the message to (e.g., '08123456789').
+ * @param message - The text content of the message.
+ * @returns Object containing status and detail of the operation.
+ */
 export async function sendWhatsApp(target: string, message: string) {
+    // Check for mock token or missing token to prevent unnecessary API calls in dev
     if (!process.env.FONNTE_TOKEN || process.env.FONNTE_TOKEN === "mock-token") {
         console.log(`[MOCK FONNTE] Sending to ${target}: ${message}`)
         return { status: true, detail: "Mock success" }
@@ -15,7 +23,7 @@ export async function sendWhatsApp(target: string, message: string) {
             body: JSON.stringify({
                 target,
                 message,
-                countryCode: '62' // Default Indonesia
+                countryCode: '62' // Default country code for Indonesia
             })
         })
 
